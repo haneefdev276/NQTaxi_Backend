@@ -1,0 +1,30 @@
+# NQTaxi Backend — Python dependencies
+# Install:  pip install -r requirements.txt
+# Python:   3.11+ (tested on 3.13)
+#
+# For exact reproducible installs (recommended for teammates):
+#   pip install -r requirements.lock.txt
+
+# --- Core framework ---
+Django>=4.2,<7                      # Web framework
+djangorestframework>=3.14,<4        # REST API
+
+# --- Authentication ---
+djangorestframework-simplejwt>=5.3,<6  # JWT access/refresh tokens
+
+# --- API & integration ---
+django-cors-headers>=4.3,<5         # CORS for frontend apps
+django-filter>=23.3,<26             # Queryset filtering (DRF)
+drf-spectacular>=0.27,<1            # OpenAPI / Swagger docs
+
+# --- Database ---
+psycopg2-binary>=2.9,<3             # PostgreSQL adapter
+
+# --- Configuration ---
+python-decouple>=3.8,<4           # Load settings from .env
+
+# --- Payments ---
+razorpay>=1.4,<3                    # Razorpay wallet top-up
+
+# --- Media (future profile/upload support) ---
+Pillow>=10.0,<13                    # Image handling for Django ImageField

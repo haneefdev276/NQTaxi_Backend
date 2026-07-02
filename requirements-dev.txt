@@ -1,0 +1,8 @@
+# Optional development tooling (not required to run the API)
+-r requirements.txt
+
+# Uncomment when adding to CI or local dev workflow:
+# pytest>=8.0
+# pytest-django>=4.8
+# ruff>=0.8
+# black>=24.0

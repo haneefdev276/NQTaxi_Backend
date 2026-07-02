@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project-specific (local dev / debug scripts)
+schema.json
+schema_out.json
+tmp_*.py
+check_pg.py
+drop_test_db.py
+reset_db.py
+inspect_migrations.py
+fix_userprofile_uuids.py
