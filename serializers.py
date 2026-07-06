@@ -1,10 +1,12 @@
-from rest_framework import serializers
+from rest_framework import serializers #To Drf Serializers Classes
+from.models import Fare #import fare model here . = recently edited file
 
-class CreateOrderSerializer(serializers.Serializer):
-    booking_id = serializers.IntegerField()
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+class FareSerializer(serializers.ModelSerializer): #Create a serilizer class based on Faremodel
+    class Meta:
+        model = Fare
+        fields = "__all__"  #all fields of fare
 
-class VerifyPaymentSerializer(serializers.Serializer):#created a new serializer for verifying the payment
-    razorpay_order_id = serializers.CharField(max_length=255)
-    razorpay_payment_id = serializers.CharField(max_length=255)
-    razorpay_signature = serializers.CharField(max_length=255)
+class FareCalculateSerializer(serializers.Serializer):
+    ride_type = serializers.CharField()
+    distance = serializers.FloatField()
+    duration = serializers.FloatField()

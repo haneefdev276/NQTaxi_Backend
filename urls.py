@@ -1,10 +1,12 @@
-from django.urls import path,include
-from . import views
+from django.urls import path
+from .views import FareListView, calculate_fare, fare_detail
 
-urlpatterns = [
-    path('create-order/',views.create_order, name='create-order'),
-    path('verify-payment/',views.verify_payment, name='verify-payment'),
-    path('webhook/',views.payment_webhook, name='payment-webhook'),
-    path('refund/',views.refund_payment, name='refund-payment'),
-    path('transaction-history/',views.transaction_history, name='transaction-history'),
+urlpatterns = [  #To Check the every rule in urlpatterns
+    path('',FareListView.as_view()),  #'' = Empty, FareListView(Class) == as view(funtion)
+    
+    path('calculate/', calculate_fare),
+      path('<str:type>/',fare_detail),
+      
+          #'' = Empty, FareListView(Class) == as view(funtion) 
+                                                           
 ]
