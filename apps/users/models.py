@@ -1,15 +1,17 @@
-import uuid
-
-from django.conf import settings
 from django.db import models
+from django.contrib.auth import get_user_model
 
-from apps.core.models import BaseModel
+User = get_user_model()
 
+class CustomerProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
+    phone = models.CharField(max_length=20, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-class UserProfile(BaseModel):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
-    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    phone = models.CharField(max_length=15, blank=True, null=True)
+    class Meta:
+        verbose_name = 'Customer Profile'
+        verbose_name_plural = 'Customer Profiles'
 
     def __str__(self):
-        return self.user.get_username()
+        return f'{self.user.get_full_name() or self.user.username}'
