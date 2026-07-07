@@ -1,3 +1,10 @@
+ HEAD
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
+.env
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -216,13 +223,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-
-# Project-specific (local dev / debug scripts)
-schema.json
-schema_out.json
-tmp_*.py
-check_pg.py
-drop_test_db.py
-reset_db.py
-inspect_migrations.py
-fix_userprofile_uuids.py
+ 3971a39875b5c1692f5d20606002b46d73d6f950
