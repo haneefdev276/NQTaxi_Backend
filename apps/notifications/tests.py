@@ -43,7 +43,7 @@ class NotificationAPITests(APITestCase):
         )
 
     def test_list_notifications_unread_first(self):
-        response = self.client.get('/notifications/')
+        response = self.client.get('/api/v1/notifications/')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -56,7 +56,7 @@ class NotificationAPITests(APITestCase):
 
     def test_list_notifications_empty_state(self):
         Notification.objects.filter(user=self.user).delete()
-        response = self.client.get('/notifications/?page=1')
+        response = self.client.get('/api/v1/notifications/?page=1')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -69,7 +69,7 @@ class NotificationAPITests(APITestCase):
         self.assertIsNone(data['previous'])
 
     def test_mark_single_notification_as_read(self):
-        response = self.client.patch(f'/notifications/{self.unread_notification.pk}/read/')
+        response = self.client.patch(f'/api/v1/notifications/{self.unread_notification.pk}/read/')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -80,14 +80,14 @@ class NotificationAPITests(APITestCase):
         self.assertIsNotNone(self.unread_notification.read_at)
 
     def test_mark_single_notification_idempotent_when_already_read(self):
-        response = self.client.patch(f'/notifications/{self.read_notification.pk}/read/')
+        response = self.client.patch(f'/api/v1/notifications/{self.read_notification.pk}/read/')
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['success'])
         self.assertTrue(response.json()['notification']['is_read'])
 
     def test_cannot_mark_other_users_notification(self):
-        response = self.client.patch(f'/notifications/{self.other_notification.pk}/read/')
+        response = self.client.patch(f'/api/v1/notifications/{self.other_notification.pk}/read/')
 
         self.assertEqual(response.status_code, 404)
         data = response.json()
@@ -95,7 +95,7 @@ class NotificationAPITests(APITestCase):
         self.assertEqual(data['code'], 'NOTIFICATION_NOT_FOUND')
 
     def test_mark_nonexistent_notification_returns_structured_error(self):
-        response = self.client.patch('/notifications/b803ad2c-a3b0-4d92-a533-88414e97c11e/read/')
+        response = self.client.patch('/api/v1/notifications/b803ad2c-a3b0-4d92-a533-88414e97c11e/read/')
 
         self.assertEqual(response.status_code, 404)
         data = response.json()
@@ -104,7 +104,7 @@ class NotificationAPITests(APITestCase):
         self.assertEqual(data['code'], 'NOTIFICATION_NOT_FOUND')
 
     def test_mark_all_notifications_as_read(self):
-        response = self.client.post('/notifications/read-all/', {}, format='json')
+        response = self.client.post('/api/v1/notifications/read-all/', {}, format='json')
 
         self.assertEqual(response.status_code, 201)
         data = response.json()
@@ -120,7 +120,7 @@ class NotificationAPITests(APITestCase):
 
     def test_mark_all_notifications_when_already_read(self):
         Notification.objects.filter(user=self.user).update(is_read=True, read_at=timezone.now())
-        response = self.client.post('/notifications/read-all/', {'confirm': True}, format='json')
+        response = self.client.post('/api/v1/notifications/read-all/', {'confirm': True}, format='json')
 
         self.assertEqual(response.status_code, 201)
         data = response.json()
@@ -131,7 +131,7 @@ class NotificationAPITests(APITestCase):
 
     def test_register_fcm_token(self):
         response = self.client.post(
-            '/notifications/fcm-token/',
+            '/api/v1/notifications/fcm-token/',
             {
                 'token': 'fcm-token-abc123',
                 'device_type': 'android',
@@ -155,7 +155,7 @@ class NotificationAPITests(APITestCase):
         )
 
         response = self.client.post(
-            '/notifications/fcm-token/',
+            '/api/v1/notifications/fcm-token/',
             {
                 'token': 'shared-device-token',
                 'device_type': 'ios',

@@ -45,10 +45,17 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    'accounts',           # custom User model (accounts.User)
+    'apps.core',
     'apps.users',
+    'apps.customers',
     'apps.rides',
+    'apps.trips',
     'apps.drivers',
     'apps.payments',
+    'apps.ratings',
+    'apps.notifications',
+    'apps.fares',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -145,9 +152,46 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'NQTaxi API',
-    'DESCRIPTION': 'API documentation for NQTaxi Backend',
+    'DESCRIPTION': (
+        'REST API documentation for the NQTaxi Backend.\n\n'
+        '## Authentication\n'
+        'All driver endpoints require a **Bearer JWT token**. '
+        'Obtain a token via `POST /api/v1/auth/token/` and click the '
+        '**Authorize** button to set it in Swagger UI.'
+    ),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+
+    # Show the Authorize button and define the JWT Bearer security scheme
+    'SECURITY': [{'BearerAuth': []}],
+    'SECURITY_DEFINITIONS': {
+        'BearerAuth': {
+            'type': 'http',
+            'scheme': 'bearer',
+            'bearerFormat': 'JWT',
+            'description': 'Enter your JWT access token. Example: `Bearer <your_token>`',
+        }
+    },
+
+    # Sort endpoints and schemas alphabetically for easier navigation
+    'SORT_OPERATIONS': False,
+    'SORT_OPERATION_PARAMETERS': True,
+    'COMPONENT_SPLIT_REQUEST': True,
+
+    # Tag ordering for Swagger sidebar
+    'TAGS': [
+        {'name': 'Auth',                    'description': 'JWT token endpoints'},
+        {'name': 'Driver – Profile',        'description': 'Driver profile management'},
+        {'name': 'Driver – Vehicle',        'description': 'Vehicle registration and management'},
+        {'name': 'Driver – Documents',      'description': 'KYC document upload and management'},
+        {'name': 'Driver – Status',         'description': 'Driver online/offline status toggle'},
+        {'name': 'Driver – Wallet',         'description': 'Wallet balance and withdrawal requests'},
+        {'name': 'Driver – Bank Details',   'description': 'Payout bank account management'},
+        {'name': 'Driver – Earnings & Stats', 'description': 'Earnings breakdown and driver statistics'},
+        {'name': 'Driver – Trip History',   'description': 'Paginated trip history'},
+        {'name': 'Driver – Incentives',     'description': 'Active incentives and progress tracking'},
+        {'name': 'Driver – Location',       'description': 'Real-time GPS location updates'},
+    ],
 }
 
 
@@ -207,7 +251,26 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # =============================================================================
+# CUSTOM USER MODEL
+# =============================================================================
+
+# The entire project (drivers, customers, trips, etc.) is built on accounts.User
+# which adds phone, role, and OTP fields on top of AbstractUser.
+AUTH_USER_MODEL = 'accounts.User'
+
+
+# =============================================================================
 # DEFAULT PRIMARY KEY
 # =============================================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# =============================================================================
+# RAZORPAY
+# =============================================================================
+
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID', default='')
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET', default='')
+RAZORPAY_AUTO_COMPLETE_TOPUP = config('RAZORPAY_AUTO_COMPLETE_TOPUP', default=False, cast=bool)
+

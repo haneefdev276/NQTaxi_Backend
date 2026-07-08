@@ -23,10 +23,13 @@ urlpatterns = [
     path('api/v1/auth/token/verify/',  TokenVerifyView.as_view(),      name='token_verify'),
 
     # API v1
-    path('api/v1/users/',    include('apps.users.urls')),
-    path('api/v1/rides/',    include('apps.rides.urls')),
-    path('api/v1/drivers/',  include('apps.drivers.urls')),
-    path('api/v1/payments/', include('apps.payments.urls')),
+    path('api/v1/users/',         include('apps.users.urls')),
+    path('api/v1/rides/',         include('apps.rides.urls')),
+    path('api/v1/drivers/',       include('apps.drivers.urls')),
+    path('api/v1/payments/',      include('apps.payments.urls')),
+    path('api/v1/customers/',     include('apps.customers.urls')),
+    path('api/v1/notifications/', include('apps.notifications.urls')),
+    path('api/v1/fares/',         include('apps.fares.urls')),
 
     # Swagger Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

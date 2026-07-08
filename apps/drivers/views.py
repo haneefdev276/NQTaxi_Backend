@@ -43,6 +43,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
+from drf_spectacular.utils import (
+    extend_schema, extend_schema_view,
+    OpenApiParameter, OpenApiExample, OpenApiResponse,
+    inline_serializer,
+)
+from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers as drf_serializers
+
 from .models import (
     DriverProfile, Vehicle, Document, BankDetails,
     Wallet, Transaction, WithdrawalRequest,
@@ -77,6 +85,36 @@ def get_driver(request) -> DriverProfile:
 # Profile
 # ---------------------------------------------------------------------------
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Driver – Profile"],
+        summary="Get driver profile",
+        description="Returns the full profile of the currently authenticated driver.",
+        responses={
+            200: DriverProfileSerializer,
+        },
+    ),
+    patch=extend_schema(
+        tags=["Driver – Profile"],
+        summary="Update driver profile",
+        description=(
+            "Partially update editable fields on the driver's profile "
+            "(phone, date_of_birth, gender, profile_photo, licence_number, "
+            "licence_expiry, city, state)."
+        ),
+        request=DriverProfileUpdateSerializer,
+        responses={
+            200: DriverProfileSerializer,
+        },
+        examples=[
+            OpenApiExample(
+                "Update city & phone",
+                value={"phone": "+91-9876543210", "city": "Mumbai", "state": "Maharashtra"},
+                request_only=True,
+            ),
+        ],
+    ),
+)
 class DriverProfileView(APIView):
     """
     GET  /drivers/profile/  — return full driver profile
@@ -101,6 +139,59 @@ class DriverProfileView(APIView):
 # Vehicle
 # ---------------------------------------------------------------------------
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Driver – Vehicle"],
+        summary="Get vehicle details",
+        description="Returns the driver's registered vehicle. Returns 404 if no vehicle is registered yet.",
+        responses={
+            200: VehicleSerializer,
+            404: OpenApiResponse(description="No vehicle registered yet."),
+        },
+    ),
+    post=extend_schema(
+        tags=["Driver – Vehicle"],
+        summary="Register a vehicle",
+        description="Create a new vehicle record for the driver. Returns 409 if a vehicle already exists — use PATCH to update.",
+        request=VehicleSerializer,
+        responses={
+            201: VehicleSerializer,
+            409: OpenApiResponse(description="Vehicle already exists. Use PATCH to update."),
+        },
+        examples=[
+            OpenApiExample(
+                "Register Sedan",
+                value={
+                    "make": "Maruti",
+                    "model": "Swift Dzire",
+                    "year": 2022,
+                    "plate_number": "MH12AB1234",
+                    "color": "White",
+                    "vehicle_type": "SEDAN",
+                    "rc_number": "MH1220220012345",
+                },
+                request_only=True,
+            ),
+        ],
+    ),
+    patch=extend_schema(
+        tags=["Driver – Vehicle"],
+        summary="Update vehicle details",
+        description="Partially update the driver's existing vehicle record.",
+        request=VehicleSerializer,
+        responses={
+            200: VehicleSerializer,
+            404: OpenApiResponse(description="No vehicle registered yet."),
+        },
+        examples=[
+            OpenApiExample(
+                "Update color",
+                value={"color": "Silver"},
+                request_only=True,
+            ),
+        ],
+    ),
+)
 class VehicleView(APIView):
     """
     GET   /drivers/vehicle/  — retrieve vehicle (404 if not set)
@@ -149,6 +240,12 @@ class VehicleView(APIView):
 # Documents
 # ---------------------------------------------------------------------------
 
+@extend_schema(
+    tags=["Driver – Documents"],
+    summary="List driver documents",
+    description="Returns all KYC / licence documents uploaded by the authenticated driver.",
+    responses={200: DocumentSerializer(many=True)},
+)
 class DocumentListView(APIView):
     """GET /drivers/documents/ — list all documents for the driver."""
     permission_classes = [IsDriver]
@@ -160,6 +257,31 @@ class DocumentListView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    tags=["Driver – Documents"],
+    summary="Upload a document",
+    description=(
+        "Register an already-uploaded S3 document key for the driver. "
+        "The file must have been uploaded to S3 beforehand; this endpoint "
+        "only records the S3 key reference."
+    ),
+    request=DocumentUploadSerializer,
+    responses={
+        201: DocumentSerializer,
+        400: OpenApiResponse(description="Validation error."),
+    },
+    examples=[
+        OpenApiExample(
+            "Upload driver licence",
+            value={
+                "doc_type": "LICENCE",
+                "s3_key": "drivers/123/licence/abc123.pdf",
+                "original_name": "driving_licence.pdf",
+            },
+            request_only=True,
+        ),
+    ],
+)
 class DocumentUploadView(APIView):
     """
     POST /drivers/documents/upload/
@@ -175,6 +297,15 @@ class DocumentUploadView(APIView):
         return Response(DocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["Driver – Documents"],
+    summary="Delete a document",
+    description="Delete a specific document belonging to the authenticated driver.",
+    responses={
+        204: OpenApiResponse(description="Document deleted successfully."),
+        404: OpenApiResponse(description="Document not found."),
+    },
+)
 class DocumentDeleteView(APIView):
     """DELETE /drivers/documents/{id}/ — remove a document belonging to the driver."""
     permission_classes = [IsDriver]
@@ -190,6 +321,37 @@ class DocumentDeleteView(APIView):
 # Status
 # ---------------------------------------------------------------------------
 
+@extend_schema(
+    tags=["Driver – Status"],
+    summary="Toggle driver status",
+    description=(
+        "Set the driver's availability status to ONLINE or OFFLINE. "
+        "Blocked drivers cannot change their status."
+    ),
+    request=DriverStatusSerializer,
+    responses={
+        200: inline_serializer(
+            name="DriverStatusResponse",
+            fields={
+                "status": drf_serializers.CharField(),
+                "status_display": drf_serializers.CharField(),
+            },
+        ),
+        403: OpenApiResponse(description="Account is blocked. Contact support."),
+    },
+    examples=[
+        OpenApiExample(
+            "Go online",
+            value={"status": "ONLINE"},
+            request_only=True,
+        ),
+        OpenApiExample(
+            "Go offline",
+            value={"status": "OFFLINE"},
+            request_only=True,
+        ),
+    ],
+)
 class DriverStatusView(APIView):
     """PATCH /drivers/status/ — toggle ONLINE / OFFLINE."""
     permission_classes = [IsDriver]
@@ -215,6 +377,12 @@ class DriverStatusView(APIView):
 # Wallet
 # ---------------------------------------------------------------------------
 
+@extend_schema(
+    tags=["Driver – Wallet"],
+    summary="Get wallet balance",
+    description="Returns the driver's wallet balance along with the last 50 transactions.",
+    responses={200: WalletSerializer},
+)
 class WalletView(APIView):
     """GET /drivers/wallet/ — wallet balance + last 50 transactions."""
     permission_classes = [IsDriver]
@@ -232,6 +400,27 @@ class WalletView(APIView):
 # Withdraw
 # ---------------------------------------------------------------------------
 
+@extend_schema(
+    tags=["Driver – Wallet"],
+    summary="Request a withdrawal",
+    description=(
+        "Create a withdrawal request for the given amount. "
+        "The amount is immediately deducted from the wallet balance. "
+        "Returns 400 if the balance is insufficient."
+    ),
+    request=WithdrawalRequestSerializer,
+    responses={
+        201: WithdrawalRequestSerializer,
+        400: OpenApiResponse(description="Insufficient balance or invalid amount."),
+    },
+    examples=[
+        OpenApiExample(
+            "Withdraw ₹500",
+            value={"amount": "500.00"},
+            request_only=True,
+        ),
+    ],
+)
 class WithdrawView(APIView):
     """POST /drivers/wallet/withdraw/ — create a withdrawal request."""
     permission_classes = [IsDriver]
@@ -277,6 +466,45 @@ class WithdrawView(APIView):
 # Bank Details
 # ---------------------------------------------------------------------------
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Driver – Bank Details"],
+        summary="Get bank details",
+        description="Retrieve the driver's saved bank account details. Returns 404 if not set yet.",
+        responses={
+            200: BankDetailsSerializer,
+            404: OpenApiResponse(description="No bank details on record."),
+        },
+    ),
+    patch=extend_schema(
+        tags=["Driver – Bank Details"],
+        summary="Create or update bank details",
+        description=(
+            "Create bank details on first call (returns 201). "
+            "Subsequent calls partially update the existing record (returns 200)."
+        ),
+        request=BankDetailsSerializer,
+        responses={
+            200: BankDetailsSerializer,
+            201: BankDetailsSerializer,
+            400: OpenApiResponse(description="Validation error."),
+        },
+        examples=[
+            OpenApiExample(
+                "Save bank details",
+                value={
+                    "account_holder": "Rajan Kumar",
+                    "account_number": "1234567890",
+                    "ifsc_code": "SBIN0001234",
+                    "bank_name": "State Bank of India",
+                    "branch_name": "Andheri West",
+                    "upi_id": "rajan@upi",
+                },
+                request_only=True,
+            ),
+        ],
+    ),
+)
 class BankDetailsView(APIView):
     """
     GET   /drivers/bank-details/ — retrieve bank details (404 if not set)
@@ -316,6 +544,25 @@ class BankDetailsView(APIView):
 # Earnings
 # ---------------------------------------------------------------------------
 
+@extend_schema(
+    tags=["Driver – Earnings & Stats"],
+    summary="Get earnings breakdown",
+    description=(
+        "Returns credit transaction aggregates for the requested period. "
+        "Use `?period=weekly` (default, last 7 days) or `?period=monthly` (last 30 days)."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="period",
+            location=OpenApiParameter.QUERY,
+            description="Reporting period: `weekly` (default) or `monthly`.",
+            required=False,
+            type=OpenApiTypes.STR,
+            enum=["weekly", "monthly"],
+        ),
+    ],
+    responses={200: EarningsBreakdownSerializer},
+)
 class EarningsView(APIView):
     """
     GET /drivers/earnings/?period=weekly|monthly
@@ -368,6 +615,12 @@ class EarningsView(APIView):
 # Stats
 # ---------------------------------------------------------------------------
 
+@extend_schema(
+    tags=["Driver – Earnings & Stats"],
+    summary="Get driver stats",
+    description="Returns aggregate statistics: total rides, acceptance rate, rating, and verification status.",
+    responses={200: DriverStatsSerializer},
+)
 class StatsView(APIView):
     """GET /drivers/stats/ — rides count, acceptance rate, rating."""
     permission_classes = [IsDriver]
@@ -395,6 +648,31 @@ class TripHistoryPagination(PageNumberPagination):
     max_page_size = 100
 
 
+@extend_schema(
+    tags=["Driver – Trip History"],
+    summary="Get trip history",
+    description=(
+        "Returns a paginated list of CREDIT transactions as a proxy for trip history. "
+        "Will be replaced with ride model queries once the rides app is fully wired up."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="page",
+            location=OpenApiParameter.QUERY,
+            description="Page number (default: 1).",
+            required=False,
+            type=OpenApiTypes.INT,
+        ),
+        OpenApiParameter(
+            name="page_size",
+            location=OpenApiParameter.QUERY,
+            description="Number of results per page (default: 20, max: 100).",
+            required=False,
+            type=OpenApiTypes.INT,
+        ),
+    ],
+    responses={200: TripHistorySerializer(many=True)},
+)
 class TripHistoryView(APIView):
     """
     GET /drivers/trip-history/?page=1&page_size=20
@@ -433,6 +711,15 @@ class TripHistoryView(APIView):
 # Incentives
 # ---------------------------------------------------------------------------
 
+@extend_schema(
+    tags=["Driver – Incentives"],
+    summary="Get active incentives",
+    description=(
+        "Returns all currently active incentives with the driver's individual progress toward each one. "
+        "An incentive is active when today's date falls within its start_date and end_date range."
+    ),
+    responses={200: DriverIncentiveProgressSerializer(many=True)},
+)
 class IncentivesView(APIView):
     """
     GET /drivers/incentives/
@@ -466,6 +753,32 @@ class IncentivesView(APIView):
 # Location
 # ---------------------------------------------------------------------------
 
+@extend_schema(
+    tags=["Driver – Location"],
+    summary="Update driver location",
+    description=(
+        "Submit the driver's current GPS coordinates. "
+        "Creates a new location record on first call (201) and updates it on subsequent calls (200)."
+    ),
+    request=DriverLocationSerializer,
+    responses={
+        200: DriverLocationSerializer,
+        201: DriverLocationSerializer,
+        400: OpenApiResponse(description="Validation error."),
+    },
+    examples=[
+        OpenApiExample(
+            "Update location",
+            value={
+                "latitude": "19.076090",
+                "longitude": "72.877426",
+                "heading": 45.0,
+                "speed": 30.5,
+            },
+            request_only=True,
+        ),
+    ],
+)
 class LocationView(APIView):
     """POST /drivers/location/ — update driver GPS coordinates."""
     permission_classes = [IsDriver]
