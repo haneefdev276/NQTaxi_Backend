@@ -32,13 +32,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'supportapps.apps.SupportappsConfig',
 
-    # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
 
-    # Local apps
     'accounts',
+    'safety',
 ]
 
 

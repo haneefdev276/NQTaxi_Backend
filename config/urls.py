@@ -12,6 +12,9 @@ urlpatterns = [
 
     # Your Accounts APIs
     path('api/', include('accounts.urls')),
+    path('safety/', include('safety.urls')),
+
+
 
     # Swagger/OpenAPI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
