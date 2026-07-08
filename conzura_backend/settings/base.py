@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     'apps.ratings',
     'apps.notifications',
 ]
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
