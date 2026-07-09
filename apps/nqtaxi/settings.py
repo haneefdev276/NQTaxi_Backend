@@ -114,6 +114,14 @@ DATABASES = {
 
 
 # =============================================================================
+# MEDIA FILES  (uploaded documents, profile photos, etc.)
+# =============================================================================
+
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# =============================================================================
 # AUTHENTICATION
 # =============================================================================
 
@@ -143,6 +151,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
 }
 
 
@@ -191,6 +200,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Driver – Trip History',   'description': 'Paginated trip history'},
         {'name': 'Driver – Incentives',     'description': 'Active incentives and progress tracking'},
         {'name': 'Driver – Location',       'description': 'Real-time GPS location updates'},
+        {'name': 'Trips',                   'description': 'Ride lifecycle: request, accept, start, complete, cancel'},
     ],
 }
 

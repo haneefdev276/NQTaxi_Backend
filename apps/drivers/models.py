@@ -4,7 +4,7 @@ Drivers app models.
 Covers:
   - DriverProfile    : extended driver info (OneToOne → auth.User)
   - Vehicle          : driver vehicle details
-  - Document         : KYC / licence documents (S3 key reference)
+  - Document         : KYC / licence documents (file upload + optional S3 key)
   - BankDetails      : payout bank account
   - Wallet           : balance ledger
   - Transaction      : credit / debit / withdrawal entries
@@ -12,7 +12,11 @@ Covers:
   - DriverLocation   : latest GPS coordinates
   - Incentive        : platform-defined bonus targets
   - DriverIncentiveProgress : per-driver progress toward an incentive
+
+All models use UUID primary keys.
 """
+
+import uuid
 
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -73,6 +77,7 @@ class WithdrawalStatus(models.TextChoices):
 # ---------------------------------------------------------------------------
 
 class DriverProfile(models.Model):
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user            = models.OneToOneField(User, on_delete=models.CASCADE, related_name='driver_profile')
     phone           = models.CharField(max_length=20, blank=True)
     date_of_birth   = models.DateField(null=True, blank=True)
@@ -112,6 +117,7 @@ class DriverProfile(models.Model):
 # ---------------------------------------------------------------------------
 
 class Vehicle(models.Model):
+    id            = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     driver        = models.OneToOneField(DriverProfile, on_delete=models.CASCADE, related_name='vehicle')
     make          = models.CharField(max_length=100)
     model         = models.CharField(max_length=100)
@@ -137,14 +143,22 @@ class Vehicle(models.Model):
 # ---------------------------------------------------------------------------
 
 class Document(models.Model):
-    driver      = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='documents')
-    doc_type    = models.CharField(max_length=20, choices=DocumentType.choices)
-    s3_key      = models.CharField(max_length=512, help_text='S3 object key of the uploaded file')
-    original_name = models.CharField(max_length=255, blank=True, help_text='Original filename for display')
-    status      = models.CharField(max_length=10, choices=DocumentStatus.choices, default=DocumentStatus.PENDING)
+    id               = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    driver           = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='documents')
+    doc_type         = models.CharField(max_length=20, choices=DocumentType.choices)
+    # Uploaded file (stored locally in MEDIA_ROOT/driver_docs/)
+    file             = models.FileField(
+        upload_to='driver_docs/',
+        null=True, blank=True,
+        help_text='Uploaded document file (PDF / image)',
+    )
+    # Optional S3 reference (for when files are uploaded directly to S3)
+    s3_key           = models.CharField(max_length=512, blank=True, help_text='S3 object key (optional)')
+    original_name    = models.CharField(max_length=255, blank=True, help_text='Original filename for display')
+    status           = models.CharField(max_length=10, choices=DocumentStatus.choices, default=DocumentStatus.PENDING)
     rejection_reason = models.TextField(blank=True)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    reviewed_at = models.DateTimeField(null=True, blank=True)
+    uploaded_at      = models.DateTimeField(auto_now_add=True)
+    reviewed_at      = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name        = 'Document'
@@ -160,6 +174,7 @@ class Document(models.Model):
 # ---------------------------------------------------------------------------
 
 class BankDetails(models.Model):
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     driver          = models.OneToOneField(DriverProfile, on_delete=models.CASCADE, related_name='bank_details')
     account_holder  = models.CharField(max_length=150)
     account_number  = models.CharField(max_length=30)
@@ -184,6 +199,7 @@ class BankDetails(models.Model):
 # ---------------------------------------------------------------------------
 
 class Wallet(models.Model):
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     driver          = models.OneToOneField(DriverProfile, on_delete=models.CASCADE, related_name='wallet')
     balance         = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_earned    = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -204,13 +220,14 @@ class Wallet(models.Model):
 # ---------------------------------------------------------------------------
 
 class Transaction(models.Model):
-    wallet      = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
-    txn_type    = models.CharField(max_length=15, choices=TransactionType.choices)
-    amount      = models.DecimalField(max_digits=12, decimal_places=2)
-    description = models.CharField(max_length=255, blank=True)
-    reference   = models.CharField(max_length=100, blank=True, help_text='Ride ID, withdrawal ID, etc.')
+    id            = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wallet        = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    txn_type      = models.CharField(max_length=15, choices=TransactionType.choices)
+    amount        = models.DecimalField(max_digits=12, decimal_places=2)
+    description   = models.CharField(max_length=255, blank=True)
+    reference     = models.CharField(max_length=100, blank=True, help_text='Ride ID, withdrawal ID, etc.')
     balance_after = models.DecimalField(max_digits=12, decimal_places=2)
-    created_at  = models.DateTimeField(auto_now_add=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name        = 'Transaction'
@@ -226,6 +243,7 @@ class Transaction(models.Model):
 # ---------------------------------------------------------------------------
 
 class WithdrawalRequest(models.Model):
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     driver          = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='withdrawal_requests')
     amount          = models.DecimalField(max_digits=12, decimal_places=2)
     status          = models.CharField(max_length=15, choices=WithdrawalStatus.choices, default=WithdrawalStatus.PENDING)
@@ -249,6 +267,7 @@ class WithdrawalRequest(models.Model):
 # ---------------------------------------------------------------------------
 
 class DriverLocation(models.Model):
+    id          = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     driver      = models.OneToOneField(DriverProfile, on_delete=models.CASCADE, related_name='location')
     latitude    = models.DecimalField(max_digits=9, decimal_places=6)
     longitude   = models.DecimalField(max_digits=9, decimal_places=6)
@@ -269,6 +288,7 @@ class DriverLocation(models.Model):
 # ---------------------------------------------------------------------------
 
 class Incentive(models.Model):
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title           = models.CharField(max_length=150)
     description     = models.TextField(blank=True)
     target_rides    = models.PositiveIntegerField(help_text='Number of rides to complete to earn the bonus')
@@ -292,6 +312,7 @@ class Incentive(models.Model):
 # ---------------------------------------------------------------------------
 
 class DriverIncentiveProgress(models.Model):
+    id              = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     driver          = models.ForeignKey(DriverProfile, on_delete=models.CASCADE, related_name='incentive_progress')
     incentive       = models.ForeignKey(Incentive, on_delete=models.CASCADE, related_name='driver_progress')
     rides_completed = models.PositiveIntegerField(default=0)

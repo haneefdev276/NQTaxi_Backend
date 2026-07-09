@@ -120,37 +120,59 @@ class DocumentSerializer(serializers.ModelSerializer):
         source='get_status_display', read_only=True,
         help_text="Human-readable document status label."
     )
+    file_url = serializers.SerializerMethodField(help_text='URL to download the uploaded document.')
 
     class Meta:
         model  = Document
         fields = [
-            'id', 'doc_type', 'doc_type_display', 's3_key', 'original_name',
+            'id', 'doc_type', 'doc_type_display', 'file_url',
+            's3_key', 'original_name',
             'status', 'status_display', 'rejection_reason',
             'uploaded_at', 'reviewed_at',
         ]
         read_only_fields = ['id', 'status', 'rejection_reason', 'uploaded_at', 'reviewed_at']
 
+    def get_file_url(self, obj) -> str | None:
+        request = self.context.get('request')
+        if obj.file and request:
+            return request.build_absolute_uri(obj.file.url)
+        return None
 
-class DocumentUploadSerializer(serializers.ModelSerializer):
-    """Used for POST /documents/upload/ — driver registers an uploaded S3 object."""
-    class Meta:
-        model  = Document
-        fields = ['doc_type', 's3_key', 'original_name']
-        extra_kwargs = {
-            'doc_type': {
-                'help_text': (
-                    f"Document type. Choices: "
-                    f"{', '.join([f'{c[0]} ({c[1]})' for c in DocumentType.choices])}."
-                )
-            },
-            's3_key':       {'help_text': 'S3 object key of the uploaded file.'},
-            'original_name': {'help_text': 'Original filename shown to the admin reviewer.'},
-        }
 
-    def validate_s3_key(self, value):
-        if not value.strip():
-            raise serializers.ValidationError('s3_key must not be blank.')
-        return value.strip()
+class DocumentUploadSerializer(serializers.Serializer):
+    """
+    Used for POST /documents/upload/
+    Accepts a multipart form upload: doc_type + file.
+    Creates and returns the Document record.
+    """
+    doc_type = serializers.ChoiceField(
+        choices=DocumentType.choices,
+        help_text=(
+            f"Document type. Choices: "
+            f"{', '.join([f'{c[0]} ({c[1]})' for c in DocumentType.choices])}."
+        ),
+    )
+    file = serializers.FileField(
+        help_text='The document file to upload (PDF, PNG, JPG, etc.). Max size: 5 MB.',
+    )
+
+    def validate_file(self, value):
+        max_size = 5 * 1024 * 1024  # 5 MB
+        if value.size > max_size:
+            raise serializers.ValidationError('File size must not exceed 5 MB.')
+        return value
+
+    def save(self, driver):
+        """Create and return a Document record with the uploaded file."""
+        file = self.validated_data['file']
+        doc = Document.objects.create(
+            driver=driver,
+            doc_type=self.validated_data['doc_type'],
+            file=file,
+            original_name=file.name,
+            s3_key='',  # reserved for S3 uploads
+        )
+        return doc
 
 
 # ---------------------------------------------------------------------------
