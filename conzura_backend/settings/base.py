@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'apps.trips',
     'apps.ratings',
     'apps.notifications',
+    'supportapps.apps.SupportappsConfig',
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

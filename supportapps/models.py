@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.conf import settings 
 
@@ -8,6 +9,11 @@ STATUS_CHOICES = [
         ("CLOSED","Closed"),
     ]
 class SupportTicket(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -29,6 +35,11 @@ class SupportTicket(models.Model):
         return self.subject
 
 class SupportMessage(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
     ticket = models.ForeignKey(
         "SupportTicket",
         on_delete=models.CASCADE,

@@ -5,11 +5,11 @@ urlpatterns = [
     path("tickets/",
 SupportTicketCreateView.as_view(),
 name="support-tickets"),
-path("ticketsm/<int:pk>/",
+path("ticketsm/<uuid:pk>/",
      SupportTicketDetailView.as_view(),
      name="support-ticket-detail"),
      path(
-         "tickets/<int:pk>/messages/",
+         "tickets/<uuid:pk>/messages/",
          SupportMessageCreateView.as_view(),
          name="support-message",
      ),
