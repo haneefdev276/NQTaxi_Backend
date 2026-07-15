@@ -5,8 +5,10 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from drf_spectacular.utils import extend_schema
@@ -108,11 +110,32 @@ class VerifyOTPView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        identifier = attrs.get('username') or attrs.get('email') or attrs.get('phone')
+        password = attrs.get('password')
+
+        if not identifier or not password:
+            raise ValidationError({'detail': 'Please provide your email, phone, or username and password.'})
+
+        user = User.objects.filter(username=identifier).first()
+        if not user:
+            user = User.objects.filter(email__iexact=identifier).first()
+        if not user:
+            user = User.objects.filter(phone=identifier).first()
+
+        if not user:
+            raise ValidationError({'detail': 'No active account found with the given credentials.'})
+
+        attrs['username'] = user.username
+        return super().validate(attrs)
+
+
 # -----------------------------
 # Login API
 # -----------------------------
 class LoginView(TokenObtainPairView):
-    pass
+    serializer_class = CustomTokenObtainPairSerializer
 
 
 # -----------------------------
