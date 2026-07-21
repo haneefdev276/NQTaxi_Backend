@@ -22,6 +22,11 @@ class BaseUserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user with that email already exists.")
         return value
 
+class UserPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'first_name', 'last_name', 'email')
+
 class CustomerRegistrationSerializer(BaseUserRegistrationSerializer):
     def create(self, validated_data):
         phone = validated_data.pop('phone')

@@ -25,7 +25,7 @@ class SavedPlaceDeleteTests(APITestCase):
         )
 
         self.client.force_authenticate(user=user)
-        response = self.client.delete(f'/customers/saved-places/{saved_place.pk}/')
+        response = self.client.delete(f'/api/v1/customers/saved-places/{saved_place.pk}/')
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['success'])
@@ -45,7 +45,7 @@ class SavedPlaceCreateTests(APITestCase):
 
         self.client.force_authenticate(user=user)
         response = self.client.post(
-            '/customers/saved-places/',
+            '/api/v1/customers/saved-places/',
             {
                 'label': 'Gym',
                 'name': 'Fitness Center',
@@ -73,7 +73,7 @@ class SavedPlaceCreateTests(APITestCase):
         self.client.force_authenticate(user=user)
         for label in ('gym', 'school'):
             response = self.client.post(
-                '/customers/saved-places/',
+                '/api/v1/customers/saved-places/',
                 {
                     'label': label,
                     'name': label.title(),
@@ -85,7 +85,7 @@ class SavedPlaceCreateTests(APITestCase):
             )
             self.assertEqual(response.status_code, 201, response.json())
 
-        list_response = self.client.get('/customers/saved-places/')
+        list_response = self.client.get('/api/v1/customers/saved-places/')
         self.assertEqual(list_response.status_code, 200)
         self.assertEqual(len(list_response.json()['saved_places']), 2)
 
@@ -106,7 +106,7 @@ class SavedPlaceCreateTests(APITestCase):
 
         self.client.force_authenticate(user=user)
         response = self.client.post(
-            '/customers/saved-places/',
+            '/api/v1/customers/saved-places/',
             {
                 'label': 'home',
                 'address': 'Another home',
@@ -148,7 +148,7 @@ class RatingsAndPaymentMethodTests(APITestCase):
         Rating.objects.create(trip=trip, given_by_rider=driver, score=Decimal('3.5'), comment='Fine')
 
         self.client.force_authenticate(user=user)
-        response = self.client.get('/customers/ratings/')
+        response = self.client.get('/api/v1/customers/ratings/')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -184,7 +184,7 @@ class RatingsAndPaymentMethodTests(APITestCase):
         )
 
         self.client.force_authenticate(user=user)
-        response = self.client.get('/customers/trip-history/')
+        response = self.client.get('/api/v1/customers/trip-history/')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -204,7 +204,7 @@ class RatingsAndPaymentMethodTests(APITestCase):
         )
 
         self.client.force_authenticate(user=user)
-        response = self.client.get('/customers/saved-places/')
+        response = self.client.get('/api/v1/customers/saved-places/')
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['success'])
@@ -229,7 +229,7 @@ class RatingsAndPaymentMethodTests(APITestCase):
             )
 
         self.client.force_authenticate(user=user)
-        response = self.client.get('/customers/wallet/')
+        response = self.client.get('/api/v1/customers/wallet/')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -244,7 +244,7 @@ class RatingsAndPaymentMethodTests(APITestCase):
         RiderProfile.objects.get_or_create(user=user)[0]
 
         self.client.force_authenticate(user=user)
-        response = self.client.post('/customers/payment-methods/', {
+        response = self.client.post('/api/v1/customers/payment-methods/', {
             'type': 'card',
             'card_number': '4242424242424242',
             'cvv': '123',
@@ -268,7 +268,7 @@ class RatingsAndPaymentMethodTests(APITestCase):
 
         self.client.force_authenticate(user=user)
         response = self.client.post(
-            '/customers/payment-methods/',
+            '/api/v1/customers/payment-methods/',
             {
                 'type': 'card',
                 'card_last4': '4242',
@@ -307,7 +307,7 @@ class RatingsAndPaymentMethodTests(APITestCase):
         )
 
         self.client.force_authenticate(user=user)
-        response = self.client.get('/customers/payment-methods/')
+        response = self.client.get('/api/v1/customers/payment-methods/')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -330,7 +330,7 @@ class ProfileViewTests(APITestCase):
         rider_profile.save()
 
         self.client.force_authenticate(user=user)
-        response = self.client.get('/customers/profile/')
+        response = self.client.get('/api/v1/customers/profile/')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -350,7 +350,7 @@ class ProfileViewTests(APITestCase):
 
         self.client.force_authenticate(user=user)
         response = self.client.patch(
-            '/customers/profile/',
+            '/api/v1/customers/profile/',
             {'home_address': 'Updated Home Address'},
             format='json',
         )
@@ -371,7 +371,7 @@ class ProfileViewTests(APITestCase):
 
         self.client.force_authenticate(user=user)
         response = self.client.put(
-            '/customers/profile/',
+            '/api/v1/customers/profile/',
             {
                 'home_address': '45, MG Road, Vijayawada',
                 'work_address': 'IT Tower, Gachibowli, Hyderabad',
@@ -394,7 +394,7 @@ class ProfileViewTests(APITestCase):
         RiderProfile.objects.get_or_create(user=user)
 
         self.client.force_authenticate(user=user)
-        response = self.client.put('/customers/profile/', {}, format='json')
+        response = self.client.put('/api/v1/customers/profile/', {}, format='json')
 
         self.assertEqual(response.status_code, 400)
         self.assertFalse(response.json()['success'])
@@ -411,7 +411,7 @@ class EmergencyContactTests(APITestCase):
 
         self.client.force_authenticate(user=user)
         response = self.client.post(
-            '/customers/emergency-contacts/',
+            '/api/v1/customers/emergency-contacts/',
             {
                 'name': 'Ravi Kumar',
                 'phone': '+919876543210',
@@ -447,7 +447,7 @@ class EmergencyContactTests(APITestCase):
         )
 
         self.client.force_authenticate(user=user)
-        response = self.client.get('/customers/emergency-contacts/')
+        response = self.client.get('/api/v1/customers/emergency-contacts/')
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -475,7 +475,7 @@ class EmergencyContactTests(APITestCase):
 
         self.client.force_authenticate(user=user)
         response = self.client.post(
-            '/customers/emergency-contacts/',
+            '/api/v1/customers/emergency-contacts/',
             {
                 'name': 'Ravi Kumar',
                 'phone': '+919876543210',
